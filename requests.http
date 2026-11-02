@@ -165,3 +165,75 @@ Content-Type: application/json
 
 ### Delete the note (expect 204), then GET it again for 404
 DELETE {{base}}/students/{{nStudentA.response.body.id}}/notes/{{note.response.body.id}}
+
+
+### ===== Homework =====
+
+### Setup: tutor
+# @name hTutor
+POST {{base}}/tutors
+Content-Type: application/json
+
+{ "name": "Dana Park", "email": "dana@example.com", "subjects": ["Math"] }
+
+### Setup: student
+# @name hStudent
+POST {{base}}/students
+Content-Type: application/json
+
+{ "name": "Eli Ward", "email": "eli@example.com", "grade": "7", "assignedTutorId": "{{hTutor.response.body.id}}" }
+
+### Assign (expect 201, status PENDING, assignedDate = today)
+# @name hw
+POST {{base}}/students/{{hStudent.response.body.id}}/homework
+Content-Type: application/json
+
+{ "tutorId": "{{hTutor.response.body.id}}", "task": "Percent word problems p.42 #1-15", "dueDate": "2026-12-31" }
+
+### Grade before submit (expect 409)
+POST {{base}}/students/{{hStudent.response.body.id}}/homework/{{hw.response.body.id}}/grade
+Content-Type: application/json
+
+{ "grade": "A" }
+
+### Bad URL (expect 400)
+POST {{base}}/students/{{hStudent.response.body.id}}/homework/{{hw.response.body.id}}/submit
+Content-Type: application/json
+
+{ "submissionUrl": "javascript:alert(1)" }
+
+### Submit (expect 200, status SUBMITTED)
+POST {{base}}/students/{{hStudent.response.body.id}}/homework/{{hw.response.body.id}}/submit
+Content-Type: application/json
+
+{ "submissionUrl": "https://docs.example.com/eli-hw-42" }
+
+### Edit after submit (expect 409)
+PUT {{base}}/students/{{hStudent.response.body.id}}/homework/{{hw.response.body.id}}
+Content-Type: application/json
+
+{ "task": "Changed", "assignedDate": "2026-10-16" }
+
+### Grade (expect 200, status COMPLETED)
+POST {{base}}/students/{{hStudent.response.body.id}}/homework/{{hw.response.body.id}}/grade
+Content-Type: application/json
+
+{ "grade": "92", "feedback": "Great setup on #7; double-check decimal placement." }
+
+### Resubmit after grading (expect 409)
+POST {{base}}/students/{{hStudent.response.body.id}}/homework/{{hw.response.body.id}}/submit
+Content-Type: application/json
+
+{ "submissionUrl": "https://docs.example.com/late-change" }
+
+### Filter by status (expect the graded homework)
+GET {{base}}/students/{{hStudent.response.body.id}}/homework?status=COMPLETED
+
+### Invalid status filter (expect 400)
+GET {{base}}/students/{{hStudent.response.body.id}}/homework?status=DONE
+
+### Due before assigned (expect 400)
+POST {{base}}/students/{{hStudent.response.body.id}}/homework
+Content-Type: application/json
+
+{ "tutorId": "{{hTutor.response.body.id}}", "task": "Backwards", "assignedDate": "2026-10-16", "dueDate": "2026-10-01" }
