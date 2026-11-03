@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:17
-    container_name: student-vault-db
+    container_name: student-database-db
     environment:
       POSTGRES_DB: studentvault
       POSTGRES_USER: vault
